@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<!-- saved from url=(0041)file:///Users/awgrob/Downloads/index.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Morning Briefing</title>
+<link href="./Morning Briefing_files/css2" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0c0c0a; --surface: #141412; --surface2: #1c1c18;
+  --border: #272720; --border2: #333328;
+  --accent: #d4a843; --accent2: #7ab8a0; --red: #c45a4a;
+  --text: #e6e2d6; --muted: #706c60; --muted2: #4a4840;
+}
+
+/* ── LOCK SCREEN ── */
+#lock-screen {
+  position: fixed; inset: 0; background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999; flex-direction: column; gap: 2rem;
+}
+.lock-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 3px; padding: 2.5rem 2rem; width: 320px;
+  display: flex; flex-direction: column; gap: 1.25rem;
+}
+.lock-title {
+  font-family: 'Libre Baskerville', serif;
+  font-size: 1.1rem; color: var(--text); text-align: center;
+}
+.lock-subtitle {
+  font-size: 0.6rem; color: var(--muted); text-align: center;
+  letter-spacing: 0.12em; text-transform: uppercase; margin-top: -0.75rem;
+}
+.lock-input {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 2px; color: var(--text); font-family: 'DM Mono', monospace;
+  font-size: 0.85rem; padding: 0.65rem 0.85rem; outline: none;
+  transition: border-color 0.2s; letter-spacing: 0.1em; text-align: center;
+}
+.lock-input:focus { border-color: var(--accent2); }
+.lock-btn {
+  width: 100%; background: var(--accent); border: none; color: var(--bg);
+  font-family: 'DM Mono', monospace; font-size: 0.68rem; font-weight: 500;
+  padding: 0.65rem; cursor: pointer; border-radius: 2px;
+  letter-spacing: 0.1em; text-transform: uppercase; transition: opacity 0.15s;
+}
+.lock-btn:hover { opacity: 0.85; }
+.lock-error {
+  font-size: 0.62rem; color: var(--red); text-align: center;
+  display: none; letter-spacing: 0.06em;
+}
+
+body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; min-height: 100vh; font-size: 13px; }
+#app { display: none; flex-direction: column; height: 100vh; }
+
+/* HEADER */
+.header {
+  border-bottom: 1px solid var(--border); padding: 0.9rem 1.5rem;
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 1rem; background: rgba(12,12,10,0.97);
+  backdrop-filter: blur(8px); z-index: 100; flex-shrink: 0; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 1.25rem; }
+.masthead { font-family: 'Libre Baskerville', serif; font-size: 1.05rem; font-weight: 700; }
+.edition { font-size: 0.58rem; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+.ticker { display: flex; gap: 1.25rem; font-size: 0.62rem; color: var(--muted); }
+.ticker-label { color: var(--muted2); }
+
+/* LAYOUT */
+.main { display: grid; grid-template-columns: 1fr 340px; flex: 1; overflow: hidden; }
+
+/* BRIEFING */
+.briefing-bar {
+  grid-column: 1 / -1; background: var(--surface);
+  border-bottom: 1px solid var(--border); padding: 0.85rem 1.5rem;
+  position: relative; flex-shrink: 0;
+}
+.briefing-bar::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); }
+.briefing-label { font-size: 0.54rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.35rem; }
+#briefing-text {
+  font-family: 'Libre Baskerville', serif; font-size: 0.84rem;
+  line-height: 1.75; color: var(--text); max-width: 900px;
+}
+#briefing-text.loading { color: var(--muted); font-style: italic; animation: pulse 1.8s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+
+/* CHARTS */
+.charts-panel {
+  overflow-y: auto; padding: 1.25rem 1.5rem;
+  border-right: 1px solid var(--border);
+  scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
+}
+.section-label {
+  font-size: 0.54rem; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--muted); border-bottom: 1px solid var(--border);
+  padding-bottom: 0.4rem; margin-bottom: 0.85rem;
+}
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.75rem; }
+.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 2px; overflow: hidden; }
+.chart-card.wide { grid-column: 1 / -1; }
+.chart-meta { padding: 0.6rem 0.85rem 0.35rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
+.chart-title { font-size: 0.64rem; color: var(--text); line-height: 1.3; }
+.chart-tag { font-size: 0.5rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.1rem 0.35rem; border-radius: 1px; white-space: nowrap; flex-shrink: 0; }
+.chart-note { padding: 0 0.85rem 0.45rem; font-size: 0.58rem; color: var(--muted); line-height: 1.5; font-style: italic; }
+.chart-frame-wrap { background: #fff; }
+.chart-frame-wrap iframe { width: 100%; height: 185px; border: none; display: block; }
+.chart-card.wide .chart-frame-wrap iframe { height: 220px; }
+
+/* RIGHT PANEL */
+.right-panel { display: flex; flex-direction: column; overflow: hidden; background: var(--surface); }
+.tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.tab-btn {
+  flex: 1; padding: 0.7rem 0.5rem; background: none; border: none;
+  border-bottom: 2px solid transparent; color: var(--muted);
+  font-family: 'DM Mono', monospace; font-size: 0.58rem;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  cursor: pointer; margin-bottom: -1px; transition: all 0.15s;
+}
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-content { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+.tab-content.active { display: flex; }
+
+/* TRACKER */
+.tracker-body { flex: 1; overflow-y: auto; padding: 1rem; scrollbar-width: thin; scrollbar-color: var(--border2) transparent; }
+.tracker-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 2px; margin-bottom: 1rem; overflow: hidden; }
+.tracker-header { padding: 0.7rem 0.85rem 0.4rem; display: flex; justify-content: space-between; align-items: baseline; }
+.tracker-name { font-family: 'Libre Baskerville', serif; font-size: 0.95rem; }
+.tracker-goal { font-size: 0.56rem; color: var(--muted); }
+.tracker-goal span { color: var(--accent); font-size: 0.7rem; }
+.progress-wrap { padding: 0 0.85rem 0.6rem; }
+.progress-track { height: 3px; background: var(--border2); border-radius: 2px; overflow: hidden; margin-bottom: 0.3rem; }
+.progress-fill { height: 100%; border-radius: 2px; background: var(--accent2); transition: width 0.4s ease; }
+.progress-fill.done { background: var(--accent); }
+.progress-labels { display: flex; justify-content: space-between; font-size: 0.56rem; color: var(--muted); }
+.progress-total { color: var(--accent2); font-size: 0.68rem; }
+.progress-total.done { color: var(--accent); }
+.set-chips { padding: 0 0.85rem 0.6rem; display: flex; flex-wrap: wrap; gap: 0.3rem; min-height: 1.4rem; }
+.set-chip { background: var(--border); font-size: 0.6rem; padding: 0.18rem 0.45rem; border-radius: 1px; }
+.no-sets { font-size: 0.58rem; color: var(--muted2); font-style: italic; }
+.tracker-note { padding: 0.5rem 0.85rem 0.75rem; font-size: 0.58rem; color: var(--muted2); border-top: 1px dashed var(--border); font-style: italic; line-height: 1.5; }
+.tracker-footer { padding: 0.65rem 1rem; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+.tracker-date-label { font-size: 0.56rem; color: var(--muted2); }
+.notion-link { font-size: 0.56rem; color: var(--accent2); text-decoration: none; letter-spacing: 0.06em; }
+.notion-link:hover { text-decoration: underline; }
+
+/* CHAT */
+.chat-messages { flex: 1; overflow-y: auto; padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.85rem; scrollbar-width: thin; scrollbar-color: var(--border2) transparent; }
+.msg { display: flex; flex-direction: column; gap: 0.3rem; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+.msg-role { font-size: 0.5rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted2); }
+.msg.user .msg-role { color: var(--accent); }
+.msg.assistant .msg-role { color: var(--accent2); }
+.msg-body { font-family: 'Libre Baskerville', serif; font-size: 0.78rem; line-height: 1.7; background: var(--surface2); border: 1px solid var(--border); border-radius: 2px; padding: 0.65rem 0.85rem; }
+.msg.user .msg-body { background: rgba(212,168,67,0.06); border-color: rgba(212,168,67,0.2); }
+.suggestions { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.25rem; }
+.suggestion-btn { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 0.6rem; padding: 0.4rem 0.65rem; text-align: left; cursor: pointer; border-radius: 2px; transition: all 0.15s; line-height: 1.4; }
+.suggestion-btn:hover { border-color: var(--accent); color: var(--accent); }
+.chat-input-area { padding: 0.75rem 1rem; border-top: 1px solid var(--border); flex-shrink: 0; }
+.chat-input-row { display: flex; gap: 0.45rem; align-items: flex-end; }
+.chat-input { flex: 1; background: var(--surface2); border: 1px solid var(--border2); border-radius: 2px; color: var(--text); font-family: 'Libre Baskerville', serif; font-size: 0.78rem; padding: 0.5rem 0.65rem; resize: none; outline: none; line-height: 1.5; min-height: 36px; max-height: 100px; transition: border-color 0.2s; }
+.chat-input::placeholder { color: var(--muted2); font-style: italic; }
+.chat-input:focus { border-color: var(--accent2); }
+.send-btn { background: var(--accent); border: none; color: var(--bg); font-family: 'DM Mono', monospace; font-size: 0.6rem; font-weight: 500; padding: 0.5rem 0.8rem; cursor: pointer; border-radius: 2px; height: 36px; letter-spacing: 0.08em; transition: opacity 0.15s; }
+.send-btn:hover { opacity: 0.85; }
+.send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.chat-hint { font-size: 0.54rem; color: var(--muted2); margin-top: 0.3rem; text-align: right; }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- LOCK SCREEN -->
+<div id="lock-screen" style="display: none;">
+  <div class="lock-box">
+    <div class="lock-title">Morning Briefing</div>
+    <div class="lock-subtitle">Enter password to continue</div>
+    <input class="lock-input" type="password" id="pw-input" placeholder="••••••••" onkeydown="if(event.key===&#39;Enter&#39;) unlock()">
+    <button class="lock-btn" onclick="unlock()">Enter</button>
+    <div class="lock-error" id="lock-error">Incorrect password</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display: flex;">
+
+  <header class="header">
+    <div class="header-left">
+      <span class="masthead">Morning Briefing</span>
+      <span class="edition" id="edition-date">MONDAY, JUNE 1, 2026</span>
+    </div>
+    <div class="ticker">
+      <span><span class="ticker-label">US10Y </span>—</span>
+      <span><span class="ticker-label">US30Y </span>—</span>
+      <span><span class="ticker-label">WTI </span>—</span>
+      <span><span class="ticker-label">DXY </span>—</span>
+    </div>
+  </header>
+
+  <div class="main">
+
+    <!-- BRIEFING BAR -->
+    <div class="briefing-bar" style="grid-column:1/-1">
+      <div class="briefing-label">AI Briefing — Generated on load</div>
+      <div id="briefing-text" class="">Briefing unavailable. Use chat to ask questions.</div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="charts-panel">
+
+      <div class="section-label">I. Debt &amp; Fiscal Stress</div>
+      <div class="chart-grid">
+        <div class="chart-card wide">
+          <div class="chart-meta"><span class="chart-title">US Federal Debt as % of GDP</span><span class="chart-tag" style="background:rgba(212,168,67,0.12);color:#d4a843">Debt/GDP</span></div>
+          <div class="chart-note">Crossed 120% post-COVID. Watch inflection points around debt ceiling negotiations and Fed policy pivots.</div>
+          <div class="chart-frame-wrap"><iframe src="./Morning Briefing_files/graph-landing.html" loading="lazy"></iframe></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-meta"><span class="chart-title">10-Year Treasury Yield</span><span class="chart-tag" style="background:rgba(212,168,67,0.12);color:#d4a843">10Y</span></div>
+          <div class="chart-note">Global risk-free rate benchmark. Rising = tightening financial conditions worldwide.</div>
+          <div class="chart-frame-wrap"><iframe src="./Morning Briefing_files/graph-landing(1).html" loading="lazy"></iframe></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-meta"><span class="chart-title">30-Year Treasury Yield</span><span class="chart-tag" style="background:rgba(212,168,67,0.12);color:#d4a843">30Y</span></div>
+          <div class="chart-note">When 30Y rises faster than 10Y, markets are pricing long-term inflation or fiscal risk.</div>
+          <div class="chart-frame-wrap"><iframe src="./Morning Briefing_files/graph-landing(2).html" loading="lazy"></iframe></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-meta"><span class="chart-title">Yield Curve: 10Y minus 2Y</span><span class="chart-tag" style="background:rgba(212,168,67,0.12);color:#d4a843">Curve</span></div>
+          <div class="chart-note">Inversion has preceded every recession since 1978. Re-steepening is often when recession actually hits.</div>
+          <div class="chart-frame-wrap"><iframe src="./Morning Briefing_files/graph-landing(3).html" loading="lazy"></iframe></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-meta"><span class="chart-title">Federal Funds Rate</span><span class="chart-tag" style="background:rgba(212,168,67,0.12);color:#d4a843">Fed</span></div>
+          <div class="chart-note">Rate hikes take 12–18 months to fully transmit. Watch language for pivot signals.</div>
+          <div class="chart-frame-wrap"><iframe src="./Morning Briefing_files/graph-landing(4).html" loading="lazy"></iframe></div>
+        </div>
+      </div>
+
+      <div class="section-label">II. Commodity Pressure</div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-meta"><span class="chart-title">WTI Crude Oil Price</span><span class="chart-tag" style="background:rgba(122,184,160,0.12);color:#7ab8a0">Oil</span></div>
+          <div class="chart-note">Moves in crude take ~3–6 months to reach pump prices, ~6–12 months to reach food CPI.</div>
+          <div class="chart-frame-wrap"><iframe src="./Morning Briefing_files/graph-landing(5).html" loading="lazy"></iframe></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-meta"><span class="chart-title">Natural Gas (Henry Hub)</span><span class="chart-tag" style="background:rgba(122,184,160,0.12);color:#7ab8a0">Gas</span></div>
+          <div class="chart-note">Critical fertilizer input. Nat gas spike → fertilizer spike → food prices, ~6–18 month lag.</div>
+          <div class="chart-frame-wrap"><iframe src="./Morning Briefing_files/graph-landing(6).html" loading="lazy"></iframe></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-meta"><span class="chart-title">Producer Price Index (PPI)</span><span class="chart-tag" style="background:rgba(196,90,74,0.12);color:#c45a4a">PPI</span></div>
+          <div class="chart-note">Leads CPI by ~2–4 months. The inflation pipeline before it hits consumers.</div>
+          <div class="chart-frame-wrap"><iframe src="./Morning Briefing_files/graph-landing(7).html" loading="lazy"></iframe></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-meta"><span class="chart-title">Consumer Price Index (CPI)</span><span class="chart-tag" style="background:rgba(196,90,74,0.12);color:#c45a4a">CPI</span></div>
+          <div class="chart-note">Downstream measure. Shelter lags market rents by ~12–18 months — stickiest component.</div>
+          <div class="chart-frame-wrap"><iframe src="./Morning Briefing_files/graph-landing(8).html" loading="lazy"></iframe></div>
+        </div>
+      </div>
+
+      <div class="section-label">III. Price Transmission — The Lag Chain</div>
+      <div class="chart-grid">
+        <div class="chart-card wide">
+          <div class="chart-meta"><span class="chart-title">Oil vs. Food CPI — Transmission Lag</span><span class="chart-tag" style="background:rgba(196,90,74,0.12);color:#c45a4a">Lag</span></div>
+          <div class="chart-note">Oil shocks take 6–12 months to materialize in grocery prices via transport, fertilizer, and packaging.</div>
+          <div class="chart-frame-wrap"><iframe src="./Morning Briefing_files/graph-landing(9).html" loading="lazy"></iframe></div>
+        </div>
+        <div class="chart-card wide">
+          <div class="chart-meta"><span class="chart-title">PPI vs. CPI — Inflation Pipeline</span><span class="chart-tag" style="background:rgba(196,90,74,0.12);color:#c45a4a">Lead</span></div>
+          <div class="chart-note">Producer prices lead consumer prices by ~2–4 months. Anticipate CPI before the official print.</div>
+          <div class="chart-frame-wrap"><iframe src="./Morning Briefing_files/graph-landing(10).html" loading="lazy"></iframe></div>
+        </div>
+      </div>
+
+      <div class="section-label">IV. Global Stress &amp; Dollar</div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-meta"><span class="chart-title">US Dollar Index (DXY)</span><span class="chart-tag" style="background:rgba(112,108,96,0.12);color:#706c60">DXY</span></div>
+          <div class="chart-note">Strong dollar pressures emerging markets and commodity exporters. Inverse to commodities.</div>
+          <div class="chart-frame-wrap"><iframe src="./Morning Briefing_files/graph-landing(11).html" loading="lazy"></iframe></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-meta"><span class="chart-title">St. Louis Financial Stress Index</span><span class="chart-tag" style="background:rgba(112,108,96,0.12);color:#706c60">Stress</span></div>
+          <div class="chart-note">Above zero = above-average stress. Spikes mark credit events and bond market dislocations.</div>
+          <div class="chart-frame-wrap"><iframe src="./Morning Briefing_files/graph-landing(12).html" loading="lazy"></iframe></div>
+        </div>
+      </div>
+
+    </div><!-- /charts -->
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(&#39;tracker&#39;)">⬡ Tracker</button>
+        <button class="tab-btn" onclick="switchTab(&#39;chat&#39;)">◈ Economist</button>
+      </div>
+
+      <!-- TRACKER -->
+      <div class="tab-content active" id="tab-tracker">
+        <div class="tracker-body" id="tracker-body">
+    <div class="tracker-card">
+      <div class="tracker-header">
+        <span class="tracker-name">Pushups</span>
+        <span class="tracker-goal">Goal: <span>200 reps</span></span>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-track"><div class="progress-fill " style="width:0%"></div></div>
+        <div class="progress-labels">
+          <span class="progress-total ">0 reps</span>
+          <span>0% of goal</span>
+        </div>
+      </div>
+      <div class="set-chips"><span class="no-sets">No sets yet</span></div>
+      <div class="tracker-note">Log sets by telling Claude — e.g. "35 pushups" or "90 second plank"</div>
+    </div>
+    <div class="tracker-card">
+      <div class="tracker-header">
+        <span class="tracker-name">Planks</span>
+        <span class="tracker-goal">Goal: <span>5 min</span></span>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-track"><div class="progress-fill " style="width:0%"></div></div>
+        <div class="progress-labels">
+          <span class="progress-total ">0s</span>
+          <span>0% of goal</span>
+        </div>
+      </div>
+      <div class="set-chips"><span class="no-sets">No sets yet</span></div>
+      <div class="tracker-note">Log sets by telling Claude — e.g. "35 pushups" or "90 second plank"</div>
+    </div></div>
+        <div class="tracker-footer">
+          <span class="tracker-date-label" id="tracker-date">Monday, June 1, 2026</span>
+          <a class="notion-link" href="https://www.notion.so/cad44c6c3f5646b7bdc84122c7752c56" target="_blank">View in Notion →</a>
+        </div>
+      </div>
+
+      <!-- CHAT -->
+      <div class="tab-content" id="tab-chat">
+        <div class="chat-messages" id="chat-messages"><div class="msg assistant"><div class="msg-role">Economist</div>
+  <div class="msg-body">Briefing ready. Ask me anything about the charts or current macro conditions.</div>
+  <div class="suggestions">
+    <button class="suggestion-btn" onclick="useSuggestion(this)">What's the lag between a crude oil spike and food prices — where are we now?</button>
+    <button class="suggestion-btn" onclick="useSuggestion(this)">Walk me through the oil → nat gas → fertilizer → food price chain.</button>
+    <button class="suggestion-btn" onclick="useSuggestion(this)">Why are bond markets under stress globally and what does a rising 30Y mean?</button>
+    <button class="suggestion-btn" onclick="useSuggestion(this)">At what debt-to-GDP level does the US face a sovereign debt crisis?</button>
+  </div></div></div>
+        <div class="chat-input-area">
+          <div class="chat-input-row">
+            <textarea class="chat-input" id="chat-input" placeholder="What does this mean for…" rows="2" onkeydown="handleKey(event)"></textarea>
+            <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
+          </div>
+          <div class="chat-hint">Enter to send · Shift+Enter for new line</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// ── PASSWORD ──
+// To change password: update the hash below using: btoa('yournewpassword')
+const PASSWORD_HASH = btoa('briefing2026');
+
+function unlock() {
+  const val = document.getElementById('pw-input').value;
+  if (btoa(val) === PASSWORD_HASH) {
+    document.getElementById('lock-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    init();
+  } else {
+    document.getElementById('lock-error').style.display = 'block';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+document.getElementById('pw-input').addEventListener('keydown', e => { if(e.key==='Enter') unlock(); });
+
+// ── DATE ──
+const now = new Date();
+const dateStr = now.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+
+// ── TABS ──
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', (i===0&&name==='tracker')||(i===1&&name==='chat')));
+  document.getElementById('tab-tracker').classList.toggle('active', name==='tracker');
+  document.getElementById('tab-chat').classList.toggle('active', name==='chat');
+}
+
+// ── TRACKER (read from Notion via display only) ──
+const NOTION_DB = 'cad44c6c3f5646b7bdc84122c7752c56';
+
+function formatSec(s) {
+  if (!s || s < 60) return `${s||0}s`;
+  return `${Math.floor(s/60)}m${s%60>0?' '+(s%60)+'s':''}`;
+}
+
+function renderTracker(entries) {
+  const body = document.getElementById('tracker-body');
+  const goals = { Pushups: { goal:200, unit:'reps' }, Planks: { goal:300, unit:'sec', displayGoal:'5 min' } };
+
+  if (!entries || entries.length === 0) {
+    body.innerHTML = `<div style="font-size:0.62rem;color:var(--muted2);font-style:italic;padding:0.5rem 0">No entries found for today. Log via Claude.</div>`;
+    return;
+  }
+
+  body.innerHTML = entries.map(e => {
+    const g = goals[e.name] || { goal:100, unit:'' };
+    const total = e.total || 0;
+    const pct = Math.min(100, Math.round((total/g.goal)*100));
+    const done = total >= g.goal;
+    const totalLabel = e.name==='Planks' ? formatSec(total) : `${total} ${g.unit}`;
+    const goalLabel = g.displayGoal || `${g.goal} ${g.unit}`;
+    const chips = e.sets ? e.sets.split(',').map(s=>s.trim()).filter(Boolean).map(s=>`<span class="set-chip">+${s}</span>`).join('') : '<span class="no-sets">No sets yet</span>';
+
+    return `
+    <div class="tracker-card">
+      <div class="tracker-header">
+        <span class="tracker-name">${e.name}</span>
+        <span class="tracker-goal">Goal: <span>${goalLabel}</span>${done?' ✓':''}</span>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-track"><div class="progress-fill ${done?'done':''}" style="width:${pct}%"></div></div>
+        <div class="progress-labels">
+          <span class="progress-total ${done?'done':''}">${totalLabel}</span>
+          <span>${pct}% of goal</span>
+        </div>
+      </div>
+      <div class="set-chips">${chips}</div>
+      <div class="tracker-note">Log sets by telling Claude — e.g. "35 pushups" or "90 second plank"</div>
+    </div>`;
+  }).join('');
+}
+
+// Static fallback — shows today's known state
+// In production, this could be replaced with a Notion API proxy
+function loadTrackerStatic() {
+  const today = now.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+  document.getElementById('tracker-date').textContent = today;
+  // Render empty state — user logs via Claude
+  renderTracker([
+    { name:'Pushups', total:0, sets:'' },
+    { name:'Planks', total:0, sets:'' }
+  ]);
+}
+
+// ── CHAT ──
+const history = [];
+const SYSTEM = `You are a senior macro economist providing a daily briefing to an intelligent non-specialist. Charts on screen: US Debt/GDP, 10Y & 30Y Treasury yields, yield curve, Fed Funds Rate, WTI crude, Henry Hub nat gas, PPI, CPI, Oil vs Food CPI lag, PPI vs CPI pipeline, DXY, St. Louis Financial Stress Index. User focus: bond market stress globally, oil→fertilizer→food chain, price transmission lags, geopolitical risk premiums (Iran/Hormuz), US debt sustainability. Be direct, specific, causal. 3–5 sentences unless more needed. Never condescending.`;
+
+function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} }
+
+async function sendMessage(preset) {
+  const input = document.getElementById('chat-input');
+  const text = (preset || input.value).trim();
+  if (!text) return;
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true; input.value = '';
+  const container = document.getElementById('chat-messages');
+
+  const uEl = document.createElement('div'); uEl.className='msg user';
+  uEl.innerHTML=`<div class="msg-role">You</div><div class="msg-body">${esc(text)}</div>`;
+  container.appendChild(uEl);
+
+  const aEl = document.createElement('div'); aEl.className='msg assistant';
+  const bEl = document.createElement('div'); bEl.className='msg-body';
+  bEl.style.borderColor='var(--accent2)'; bEl.textContent='…';
+  aEl.innerHTML='<div class="msg-role">Economist</div>'; aEl.appendChild(bEl);
+  container.appendChild(aEl); container.scrollTop=container.scrollHeight;
+
+  history.push({role:'user',content:text});
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:SYSTEM,messages:history})
+    });
+    const data = await res.json();
+    const reply = data.content?.find(b=>b.type==='text')?.text||'No response.';
+    bEl.style.borderColor=''; bEl.textContent=reply;
+    history.push({role:'assistant',content:reply});
+  } catch { bEl.style.borderColor=''; bEl.textContent='Error. Try again.'; }
+  btn.disabled=false; container.scrollTop=container.scrollHeight;
+}
+
+async function generateBriefing() {
+  const el = document.getElementById('briefing-text');
+  const prompt = `Generate a sharp 3-sentence macro economist morning briefing for ${dateStr}. Cover: (1) bond markets and yields, (2) oil-fertilizer-food lag chain, (3) one forward-looking risk. Confident, direct, no filler. Plain prose.`;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:SYSTEM,messages:[{role:'user',content:prompt}]})
+    });
+    const data = await res.json();
+    const text = data.content?.find(b=>b.type==='text')?.text||'Briefing unavailable.';
+    el.classList.remove('loading'); el.textContent=text;
+    history.push({role:'user',content:prompt},{role:'assistant',content:text});
+    seedChat();
+  } catch { el.classList.remove('loading'); el.textContent='Briefing unavailable. Use chat to ask questions.'; seedChat(); }
+}
+
+function seedChat() {
+  const c = document.getElementById('chat-messages');
+  const el = document.createElement('div'); el.className='msg assistant';
+  el.innerHTML=`<div class="msg-role">Economist</div>
+  <div class="msg-body">Briefing ready. Ask me anything about the charts or current macro conditions.</div>
+  <div class="suggestions">
+    <button class="suggestion-btn" onclick="useSuggestion(this)">What's the lag between a crude oil spike and food prices — where are we now?</button>
+    <button class="suggestion-btn" onclick="useSuggestion(this)">Walk me through the oil → nat gas → fertilizer → food price chain.</button>
+    <button class="suggestion-btn" onclick="useSuggestion(this)">Why are bond markets under stress globally and what does a rising 30Y mean?</button>
+    <button class="suggestion-btn" onclick="useSuggestion(this)">At what debt-to-GDP level does the US face a sovereign debt crisis?</button>
+  </div>`;
+  c.appendChild(el);
+}
+
+function useSuggestion(btn) {
+  switchTab('chat');
+  btn.closest('.suggestions').remove();
+  sendMessage(btn.textContent.trim());
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function init() {
+  document.getElementById('edition-date').textContent = dateStr.toUpperCase();
+  loadTrackerStatic();
+  generateBriefing();
+}
+</script>
+
+
+</body></html>
